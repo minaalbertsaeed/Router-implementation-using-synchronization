@@ -1,26 +1,8 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.Semaphore;
 
-class Semaphore {
-    private int permits;
-
-    public Semaphore(int permits) {
-        this.permits = permits;
-    }
-
-    public synchronized void acquire() throws InterruptedException {
-        while (permits <= 0) {
-            wait();
-        }
-        permits--;
-    }
-
-    public synchronized void release() {
-        permits++;
-        notify();
-    }
-}
 
 class Router {
     private List<String> connections = new ArrayList<>();

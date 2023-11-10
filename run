@@ -1,0 +1,4 @@
+#!/bin/bash
+
+javac Network.java && java Network
+
