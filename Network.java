@@ -1,9 +1,10 @@
 import java.util.*;
+import java.io.*;
 
 class Router {
 
+    public int maxNumber, ConnectedDevices;
     public boolean[] connected;
-    public int maxDevices, currentConnectedDevices;
     public Semaphore sema;
 
     public Router(int maxConnections) {
@@ -13,31 +14,30 @@ class Router {
     }
 
     public synchronized int occupyConnection(Device device) throws InterruptedException {
-        for (int i = 0; i < maxDevices; i++) {
-            if (!connected[i]) {
-                currentConnectedDevices++;
-                device.connectionID = i + 1;
-                connected[i] = true;
+        int cnt = 0;
+        while (cnt < maxNumber) {
+            if (connected[cnt] == false) {
+                ConnectedDevices++;
+                device.connectionID = cnt + 1;
+                connected[cnt] = true;
                 Thread.sleep(100);
                 break;
             }
+            cnt++;
         }
         return device.connectionID;
     }
 
     public synchronized void releaseConnection(Device device) {
-        currentConnectedDevices--;
+        ConnectedDevices--;
         connected[device.connectionID - 1] = false;
         notify();
-        System.out.println("Connection " + device.connectionID + ": " + device.name + " Logged out");
+        device.logout();
 
-    }
-
-    public synchronized void arrived(Device device) {
-        // System.out.println( device.name +" (" + device.type + ")" +" arrived");
     }
 
 }
+
 class Semaphore {
     int value;
 
@@ -65,6 +65,7 @@ class Semaphore {
         }
     }
 }
+
 class Device extends Thread {
     public String name;
     public String type;
@@ -81,7 +82,6 @@ class Device extends Thread {
     @Override
     public void run() {
         try {
-            router.arrived(this);
             router.sema.wait(this);
             connectionID = router.occupyConnection(this);
             System.out.println("Connection " + connectionID + ": " + name + " Occupied");
@@ -93,13 +93,24 @@ class Device extends Thread {
             e.printStackTrace();
         }
     }
+
     public void activity() throws InterruptedException {
+        login();
         System.out.println("Connection " + connectionID + ": " + name + " Performs online activity");
         Thread.sleep(2000);
     }
+
+    public void login() {
+        System.out.println("Connection " + connectionID + ": " + name + " login");
+    }
+
+    public void logout() {
+        System.out.println("Connection " + connectionID + ": " + name + " Logged out");
+    }
 }
+
 public class Network {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Enter the max number of connections a router can accept (N):");
@@ -120,10 +131,16 @@ public class Network {
             devices.add(device);
         }
 
+        // redirect the print statments to output.txt
+
+        FileOutputStream fos = new FileOutputStream("output.txt");
+        PrintStream ps = new PrintStream(fos);
+        System.setOut(ps);
+
         for (int i = 0; i < devices.size(); i++) {
-            devices.get(i).run(); // Changed: using start() instead of run()
+            devices.get(i).start();
         }
         scanner.close();
+
     }
 }
-
